@@ -15,6 +15,18 @@ root.render(
   </React.StrictMode>
 );
 
+function toggleForm() {
+    let loginForm = document.getElementById("login-form");
+    let signupForm = document.getElementById("signup-form");
+
+    if (loginForm.classList.contains("active")) {
+        loginForm.classList.remove("active");
+        signupForm.classList.add("active");
+    } else {
+        signupForm.classList.remove("active");
+        loginForm.classList.add("active");
+    }
+}
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
