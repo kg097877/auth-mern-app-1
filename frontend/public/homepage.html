@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlayPal</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.1/gsap.min.js"></script>
+   <link rel="stylesheet" href="homepage.css">
+
+</head>
+
+<body>
+
+    <button class="theme-toggle" id="theme-toggle" title="Toggles light & dark" aria-label="auto" aria-live="polite">
+        <svg class="sun-and-moon" aria-hidden="true" width="24" height="24" viewBox="0 0 24 24">
+            <mask class="moon" id="moon-mask">
+                <rect x="0" y="0" width="100%" height="100%" fill="white" />
+                <circle cx="24" cy="10" r="6" fill="black" />
+            </mask>
+            <circle class="sun" cx="12" cy="12" r="6" mask="url(#moon-mask)" fill="currentColor" />
+            <g class="sun-beams" stroke="currentColor">
+                <line x1="12" y1="1" x2="12" y2="3" />
+                <line x1="12" y1="21" x2="12" y2="23" />
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                <line x1="1" y1="12" x2="3" y2="12" />
+                <line x1="21" y1="12" x2="23" y2="12" />
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+            </g>
+        </svg>
+    </button>
+    
+
+    <div class="navbar">
+        <img src="Logo.jpeg" alt="PlayPal Logo" class="logo">
+        <span class="product-name">PlayPal</span>
+        <input type="text" class="search-box" id="searchBox" placeholder="Search Playlists..."
+         oninput="filterPlaylists()">
+        <div class="right-icons">
+            <div class="container">
+                <button id="darkModeToggle">🌙</button>
+            </div>
+        </div>
+    </div>
+
+    <button id="createPlaylistBtn">Create Playlist</button>
+
+    <div id="playlistForm" class="form-popup">
+        <form class="form-content">
+            <label for="playlistName">Playlist Name:</label>
+            <input type="text" id="playlistName" required>
+
+            <label for="playlistLink">Playlist Link:</label>
+            <input type="url" id="playlistLink" required>
+
+            <button type="submit">Create</button>
+            <button type="button" class="cancelBtn">Cancel</button>
+        </form>
+    </div>
+
+    <div id="playlistContainer" class="playlist-container"></div>
+
+    <div id="confirmDialog" class="confirm-dialog">
+        <p>Are you sure you want to delete this playlist?</p>
+        <button class="confirm-btn" onclick="deleteConfirmed()">Yes</button>
+        <button class="cancel-btn" onclick="closeConfirmDialog()">No</button>
+    </div>
+
+<script>
+    let playlists = JSON.parse(localStorage.getItem('playlists')) || [];
+    const playlistContainer = document.getElementById('playlistContainer');
+
+    window.onload = function () {
+        displayPlaylists();
+    };
+
+    const createPlaylistBtn = document.getElementById('createPlaylistBtn');
+    const playlistForm = document.getElementById('playlistForm');
+    const cancelBtn = document.querySelector('.cancelBtn');
+
+    createPlaylistBtn.addEventListener('click', () => {
+        gsap.to(playlistForm, { duration: 0.5, opacity: 1, scale: 1 });
+        playlistForm.style.display = 'block';
+    });
+
+    cancelBtn.addEventListener('click', () => {
+        gsap.to(playlistForm, {
+            duration: 0.3, opacity: 0, scale: 0.7, onComplete: () => {
+                playlistForm.style.display = 'none';
+            }
+        });
+        document.getElementById('playlistLink').value = "";
+        document.getElementById('playlistName').value = "";
+    });
+
+    document.querySelector('.form-content').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const link = document.getElementById('playlistLink').value;
+        const name = document.getElementById('playlistName').value;
+        const playlistId = extractPlaylistId(link);
+        document.getElementById('playlistLink').value = "";
+        document.getElementById('playlistName').value = "";
+
+        if (playlistId) {
+            const thumbnail = await fetchPlaylistThumbnail(playlistId);
+            const newPlaylist = { name, link, image: thumbnail };
+            playlists.push(newPlaylist);
+            localStorage.setItem('playlists', JSON.stringify(playlists));
+            displayPlaylists();
+            playlistForm.style.display = 'none';
+        } else {
+            alert("Invalid YouTube playlist URL!");
+        }
+    });
+
+    function extractPlaylistId(url) {
+        const regex = /[?&]list=([a-zA-Z0-9_-]+)/;
+        const match = url.match(regex);
+        return match ? match[1] : null;
+    }
+
+    async function fetchPlaylistThumbnail(playlistId) {
+        const API_KEY = "AIzaSyDEN8VXe2Bda0rD8h7P6H_AeuQjw5IPYs4";
+        const apiUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${playlistId}&maxResults=1&key=${API_KEY}`;
+
+        try {
+            const response = await fetch(apiUrl);
+            const data = await response.json();
+            return data.items[0]?.snippet?.thumbnails?.medium?.url || "https://via.placeholder.com/150";
+        } catch (error) {
+            console.error("Error fetching thumbnail:", error);
+            return "https://via.placeholder.com/150";
+        }
+    }
+
+    function displayPlaylists(filteredPlaylists = playlists) {
+    playlistContainer.innerHTML = ""; // Clear previous content
+
+    if (filteredPlaylists.length === 0) {
+        const noPlaylistsMessage = document.createElement("p");
+        noPlaylistsMessage.classList.add("no-playlists-message");
+        noPlaylistsMessage.textContent = "No Playlists Found!";
+        playlistContainer.appendChild(noPlaylistsMessage);
+        return;
+    }
+
+    filteredPlaylists.forEach((playlist, index) => {
+        const card = document.createElement('div');
+        card.classList.add('playlist-card');
+        card.innerHTML = `
+            <img class="altThumb" onclick="goToPlaylistPage('${playlist.link}')" src="${playlist.image}" alt="Thumbnail">
+            <div class="content">
+                <p class="playlist-name">${playlist.name}</p>
+                <button onclick="confirmDelete(${index})">Delete</button>
+            </div>
+        `;
+        playlistContainer.appendChild(card);
+    });
+}
+
+
+    
+    function goToPlaylistPage(link) {
+
+        let playlistId = extractPlaylistId(link);
+
+      if (playlistId) {
+        // Redirect to videos.html with playlistId in the URL
+        window.location.href = `videos.html?playlistId=${playlistId}`;
+      } else {
+        alert("Please enter a valid YouTube playlist URL!");
+      }
+    }
+
+    function confirmDelete(index) {
+        deleteIndex = index;
+        document.getElementById('confirmDialog').style.display = 'block';
+        gsap.fromTo('#confirmDialog', { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.3 });
+    }
+
+    function closeConfirmDialog() {
+        gsap.to('#confirmDialog', {
+            opacity: 0, scale: 0.7, duration: 0.3, onComplete: () => {
+                document.getElementById('confirmDialog').style.display = 'none';
+            }
+        });
+        deleteIndex = null;
+    }
+
+    function deleteConfirmed() {
+        if (deleteIndex !== null) {
+            playlists.splice(deleteIndex, 1);
+            localStorage.setItem('playlists', JSON.stringify(playlists));
+            displayPlaylists();
+        }
+        closeConfirmDialog();
+    }
+function filterPlaylists() {
+    const search = document.getElementById('searchBox').value.toLowerCase();
+    const filteredPlaylists = playlists.filter(p => p.name.toLowerCase().includes(search));
+    displayPlaylists(filteredPlaylists);
+}
+
+    document.addEventListener("DOMContentLoaded", function () {
+        let playlists = JSON.parse(localStorage.getItem("playlists")) || [];
+        displayPlaylists();
+    });
+
+    // Dark Mode Toggle
+    const toggleButton = document.getElementById("darkModeToggle");
+
+    if (localStorage.getItem("darkMode") === "enabled") {
+        document.body.classList.add("dark-mode");
+        toggleButton.textContent = "☀️";
+    }
+
+    toggleButton.addEventListener("click", () => {
+        document.body.classList.toggle("dark-mode");
+
+        if (document.body.classList.contains("dark-mode")) {
+            localStorage.setItem("darkMode", "enabled");
+            toggleButton.textContent = "☀️";
+        } else {
+            localStorage.setItem("darkMode", "disabled");
+            toggleButton.textContent = "🌙";
+        }
+    });
+
+    // Theme Preference
+    const storageKey = 'theme-preference';
+
+    const onClick = () => {
+        theme.value = theme.value === 'light' ? 'dark' : 'light';
+        setPreference();
+    };
+
+    const getColorPreference = () => {
+        if (localStorage.getItem(storageKey))
+            return localStorage.getItem(storageKey);
+        else
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    };
+
+    const setPreference = () => {
+        localStorage.setItem(storageKey, theme.value);
+        reflectPreference();
+    };
+
+    const reflectPreference = () => {
+        document.firstElementChild.setAttribute('data-theme', theme.value);
+        document.querySelector('#theme-toggle')?.setAttribute('aria-label', theme.value);
+    };
+
+    const theme = {
+        value: getColorPreference(),
+    };
+
+    reflectPreference();
+
+    window.onload = () => {
+        reflectPreference();
+        document.querySelector('#theme-toggle').addEventListener('click', onClick);
+    };
+
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', ({ matches: isDark }) => {
+        theme.value = isDark ? 'dark' : 'light';
+        setPreference();
+    });
+</script>
+
+
+
+</body>
+
+</html>
