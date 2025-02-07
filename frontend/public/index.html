@@ -24,11 +24,40 @@
       work correctly both with client-side routing and a non-root public URL.
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
-    <title>React App</title>
+    <title>PlayPal</title>
+
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
+    <div class="container">
+        <img src="./ff417543-06a6-4868-8876-05b889eb0230.jpg" height="300px" style="margin-right: 300px;" />
+
+        <div class="form-box">
+            <form id="login-form" class="form active">
+                <h2 style="color: white;">Log in</h2>
+                <input type="text" placeholder="E-mail, or username" required>
+                <input type="password" placeholder="Password" required>
+                <button type="submit" style="color: white;">Log in</button>
+                <p class="toggle-link" style="color: white;">Don't have an account? <span onclick="toggleForm()">Sign up</span></p>
+            </form>
+
+            <form id="signup-form" class="form">
+                <h2 style="color: white;">Sign up</h2>
+                <input type="text" placeholder="Full Name" required>
+                <input type="text" placeholder="E-mail" required>
+                <input type="password" placeholder="Password" required>
+                <button type="submit">Sign up</button>
+                <p class="toggle-link" style="color: white;">Already have an account? <span onclick="toggleForm()">Log in</span></p>
+            </form>
+        </div>
+    </div>
+    <div class="background">
+        <div class="glow-circle large"></div>
+        <div class="glow-circle medium"></div>
+        <div class="glow-circle small"></div>
+    </div>
+
     <!--
       This HTML file is a template.
       If you open it directly in the browser, you will see an empty page.
